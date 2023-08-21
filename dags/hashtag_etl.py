@@ -17,7 +17,7 @@ default_args = {
     'retry_delay': timedelta(minutes=1),
     # 'on_failure_callback': slack.on_failure_callback
 }
-with DAG("etl_brand",
+with DAG("etl_hashtag",
          description="brand data process DAG",
          schedule='@hourly',
          catchup=False,
@@ -32,7 +32,7 @@ with DAG("etl_brand",
     date_pattern = Variable.get("etl_date_pattern")
 
     table = "brand"
-    file_prefix = f"{table}_{{{{ ds }}}}/{table}_{{{{ dag_run.logical_date.strftime('{date_pattern}') }}}}"
+    file_prefix = f"{table}_{{{{ ds }}}}/{table}_{{{{ dag_run.logical_date.strftime({date_pattern}) }}}}"
 
     # S3 복사 Task
     s3_copy_task = PythonOperator(
@@ -65,23 +65,12 @@ with DAG("etl_brand",
     snowflake_task = SQLExecuteQueryOperator(
         task_id="snowflake_task",
         conn_id="snowflake_default",
-        # FIXME temp_ for test
         sql=f"""
-            USE SCHEMA RAW_DATA;
-            BEGIN;
-            DELETE FROM RAW_DATA.temp_{table} WHERE 1=1;
-            COPY INTO RAW_DATA.temp_{table}
-            FROM @s3_stage/{dest_bucket}/{file_prefix}.parquet
-            PATTERN='.*.parquet'
-            FORCE = TRUE
-            MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
-
-            COPY INTO RAW_DATA.temp_{table}_log
+            COPY INTO RAW_DATA.{table}
             FROM @s3_stage/{dest_bucket}/{file_prefix}.parquet
             PATTERN='.*.parquet'
             FORCE = TRUE
             MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;            
-            COMMIT;
             """,
         autocommit=False,
         split_statements=True,
