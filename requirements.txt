@@ -5,4 +5,5 @@ py4j
 apache-airflow-providers-amazon
 apache-airflow-providers-apache-spark
 apache-airflow-providers-snowflake
+apache-airflow-providers-slack
 snowflake-connector-python
