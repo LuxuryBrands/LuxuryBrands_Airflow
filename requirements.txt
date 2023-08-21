@@ -1,2 +1,8 @@
-apache-airflow-providers-databricks
 slack
+pytest
+pyspark
+py4j
+apache-airflow-providers-amazon
+apache-airflow-providers-apache-spark
+apache-airflow-providers-snowflake
+snowflake-connector-python
