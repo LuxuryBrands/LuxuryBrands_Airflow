@@ -65,18 +65,17 @@ with DAG("etl_brand",
     snowflake_task = SQLExecuteQueryOperator(
         task_id="snowflake_task",
         conn_id="snowflake_default",
-        # FIXME temp_ for test
         sql=f"""
             USE SCHEMA RAW_DATA;
             BEGIN;
-            DELETE FROM RAW_DATA.temp_{table} WHERE 1=1;
-            COPY INTO RAW_DATA.temp_{table}
+            DELETE FROM RAW_DATA.{table} WHERE 1=1;
+            COPY INTO RAW_DATA.{table}
             FROM @s3_stage/{dest_bucket}/{file_prefix}.parquet
             PATTERN='.*.parquet'
             FORCE = TRUE
             MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
 
-            COPY INTO RAW_DATA.temp_{table}_log
+            COPY INTO RAW_DATA.{table}_log
             FROM @s3_stage/{dest_bucket}/{file_prefix}.parquet
             PATTERN='.*.parquet'
             FORCE = TRUE
