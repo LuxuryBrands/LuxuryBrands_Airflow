@@ -39,6 +39,6 @@ result_df.printSchema()
 result_df.show(truncate=False)
 
 # S3 paquet 형태로 저장
-result_df.write.mode("overwrite").parquet(f"{file_prefix}")
+result_df.write.mode("overwrite").parquet(f"{file_prefix}.parquet")
 
 spark.stop()
