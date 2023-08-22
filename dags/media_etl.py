@@ -11,6 +11,8 @@ from airflow.utils.dates import days_ago
 from plugins import slack
 from plugins.s3 import check_and_copy_files
 
+table = "media"
+
 default_args = {
     'start_date': days_ago(1),
     'retries': 0,
@@ -18,7 +20,7 @@ default_args = {
     'on_failure_callback': slack.send_failure_alert,
     'on_success_callback': slack.send_success_alert
 }
-with DAG("etl_media",
+with DAG(f"etl_{table}",
          description="brand data process DAG",
          schedule='@hourly',
          catchup=False,
@@ -31,8 +33,6 @@ with DAG("etl_media",
     source_bucket = Variable.get("aws_raw_bucket")
     dest_bucket = Variable.get("aws_stage_bucket")
     date_pattern = Variable.get("etl_date_pattern")
-
-    table = "brand"
     file_prefix = f"{table}_{{{{ ds }}}}/{table}_{{{{ dag_run.logical_date.strftime('{date_pattern}') }}}}"
 
     # S3 복사 Task
@@ -53,7 +53,7 @@ with DAG("etl_media",
         application=f"./dags/plugins/spark_{table}.py",
         application_args=[
             f"s3a://{bucket_name}/{dest_bucket}/{file_prefix}",
-            date_pattern,
+            "{{ ts }}",
         ],
         conf={
             "spark.hadoop.fs.s3a.access.key": Variable.get("aws_access_key_id"),
@@ -65,7 +65,9 @@ with DAG("etl_media",
     # Snowflake 작업을 위한 Task
     snowflake_task = SQLExecuteQueryOperator(
         task_id="snowflake_task",
+        conn_id="snowflake_default",
         sql=f"""
+            USE SCHEMA RAW_DATA;
             BEGIN;
             DELETE FROM RAW_DATA.{table} WHERE 1=1;
             COPY INTO RAW_DATA.{table}
