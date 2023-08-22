@@ -1,15 +1,10 @@
-import logging
-from airflow.hooks.base import BaseHook
 from airflow.models import Variable
-from airflow.providers.slack.hooks.slack_webhook import SlackWebhookHook
 from airflow.providers.slack.operators.slack import SlackAPIPostOperator
-from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
-from airflow.utils.state import State
 
 
 class SlackAlert:
     def __init__(self, channel):
-        self.token = Variable.get("slack_app_token", default_var=None)
+        self.token = Variable.get("slack_token", default_var=None)
         self.channel = channel
 
     def _make_attachments(self, context, title="Failure", color="danger"):
@@ -21,7 +16,7 @@ class SlackAlert:
                     f'* `DAG`:  {context.get("task_instance").dag_id}'
                     f'\n* `Task`:  {context.get("task_instance").task_id}'
                     f'\n* `Run ID`:  {context.get("run_id")}'
-                    f'\n* `Execution Time`:  {context.get("execution_date")}'
+                    f'\n* `Logical Date`:  {context.get("logical_date")}'
                 ),
                 "actions": [
                     {
@@ -37,12 +32,12 @@ class SlackAlert:
             }
         ]
 
-    def _send_message(self, context, task_id, text, title, color):
+    def send_message(self, context, task_id, text, title, color):
         try:
             SlackAPIPostOperator(
                 task_id=task_id,
-                channel=self.slack_channel,
-                token=self.slack_token,
+                channel=self.channel,
+                token=self.token,
                 text=text,
                 attachments=self._make_attachments(context, title, color),
             ).execute(context=context)
