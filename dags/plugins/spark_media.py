@@ -1,21 +1,15 @@
 import sys
 
-from pyspark.pandas import to_datetime
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType
-from datetime import datetime
-from dags.plugins.connectutils import connect_spark, write_snowflake
-from pyspark.sql.functions import lit, to_timestamp, col, unix_timestamp, from_unixtime
+from pyspark.sql.functions import lit, to_timestamp, col
 
 file_prefix = sys.argv[1]
-date_pattern = sys.argv[2]
+logical_date = sys.argv[2]
 
 # Spark 연결
 spark = SparkSession.builder.appName("S3toSpark").getOrCreate()
 df = spark.read.option("multiline", "true").json(file_prefix)
-
-string_date = file_prefix.split('_')[-1]
-logical_date = datetime.strptime(string_date, date_pattern)
 
 # FIXME media 필드 검증로직 ->
 # FIXME media 삭제 검증로직 ->
@@ -36,8 +30,8 @@ def transfer_df(df):
 
     # 컬럼추가
     df = df.withColumn("del_yn", lit('N').cast(StringType()))
-    df = df.withColumn("created_at", lit(logical_date))
-    df = df.withColumn("updated_at", lit(logical_date))
+    df = df.withColumn("created_at", to_timestamp(lit(logical_date)))
+    df = df.withColumn("updated_at", to_timestamp(lit(logical_date)))
 
     return df
 

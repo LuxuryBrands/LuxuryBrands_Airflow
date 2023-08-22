@@ -1,19 +1,15 @@
 import sys
-from datetime import datetime
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import lit, when, col, regexp_replace
+from pyspark.sql.functions import lit, when, col, regexp_replace, to_timestamp
 from pyspark.sql.types import StringType
 
 file_prefix = sys.argv[1]
-date_pattern = sys.argv[2]
+logical_date = sys.argv[2]
 
 # Spark 연결
 spark = SparkSession.builder.appName("S3toSpark").getOrCreate()
 df = spark.read.option("multiline", "true").json(file_prefix)
-
-string_date = file_prefix.split('_')[-1]
-logical_date = datetime.strptime(string_date, date_pattern)
 
 # FIXME brand 필드 검증로직 -> 필드명 변경시 알람, 결측치 처리
 # FIXME brand 삭제 검증로직 -> 브랜드 로우 10개가 아니라면 1) db에서 브랜드 정보 모두 호출, 삭제 브랜드 색출 2)경고 및 del 처리
@@ -30,8 +26,8 @@ def transfer_df(df):
     # 컬럼추가
     df = df.withColumn("tag_name", regexp_replace(col("user_name"), "maison|official", ""))
     df = df.withColumn("del_yn", lit('N').cast(StringType()))
-    df = df.withColumn("created_at", lit(logical_date))
-    df = df.withColumn("updated_at", lit(logical_date))
+    df = df.withColumn("created_at", to_timestamp(lit(logical_date)))
+    df = df.withColumn("updated_at", to_timestamp(lit(logical_date)))
 
     # 결측치
     df = df.withColumn("name", when(col("name") == "", col("user_name")).otherwise(col("name")))

@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-import slack as slack
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.empty import EmptyOperator
@@ -9,13 +8,15 @@ from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOpe
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.utils.dates import days_ago
 
+from plugins import slack
 from plugins.s3 import check_and_copy_files
 
 default_args = {
     'start_date': days_ago(1),
     'retries': 0,
     'retry_delay': timedelta(minutes=1),
-    # 'on_failure_callback': slack.on_failure_callback
+    'on_failure_callback': slack.send_failure_alert,
+    'on_success_callback': slack.send_success_alert
 }
 with DAG("etl_media",
          description="brand data process DAG",
@@ -32,7 +33,7 @@ with DAG("etl_media",
     date_pattern = Variable.get("etl_date_pattern")
 
     table = "brand"
-    file_prefix = f"{table}_{{{{ ds }}}}/{table}_{{{{ dag_run.logical_date.strftime({date_pattern}) }}}}"
+    file_prefix = f"{table}_{{{{ ds }}}}/{table}_{{{{ dag_run.logical_date.strftime('{date_pattern}') }}}}"
 
     # S3 복사 Task
     s3_copy_task = PythonOperator(
