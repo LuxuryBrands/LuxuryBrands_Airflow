@@ -1,7 +1,7 @@
 import sys
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import lit, when, col, regexp_replace, to_timestamp
+from pyspark.sql.functions import lit, when, col, regexp_replace, to_timestamp, date_format
 from pyspark.sql.types import StringType
 
 file_prefix = sys.argv[1]
@@ -26,8 +26,10 @@ def transfer_df(df):
     # 컬럼추가
     df = df.withColumn("tag_name", regexp_replace(col("user_name"), "maison|official", ""))
     df = df.withColumn("del_yn", lit('N').cast(StringType()))
-    df = df.withColumn("created_at", to_timestamp(lit(logical_date)))
-    df = df.withColumn("updated_at", to_timestamp(lit(logical_date)))
+    df = df.withColumn("created_at",
+                       date_format(to_timestamp(lit(logical_date), "yyyy-MM-dd'T'HH:mm:ssXXX"), "yyyy-MM-dd HH:mm:ss"))
+    df = df.withColumn("updated_at",
+                       date_format(to_timestamp(lit(logical_date), "yyyy-MM-dd'T'HH:mm:ssXXX"), "yyyy-MM-dd HH:mm:ss"))
 
     # 결측치
     df = df.withColumn("name", when(col("name") == "", col("user_name")).otherwise(col("name")))
@@ -42,6 +44,6 @@ result_df.printSchema()
 result_df.show(truncate=False)
 
 # S3 paquet 형태로 저장
-result_df.write.mode("overwrite").parquet(f"{file_prefix}.parquet")
+result_df.write.mode("overwrite").format("avro").save(f"{file_prefix}.avro")
 
 spark.stop()
