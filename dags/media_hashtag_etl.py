@@ -4,8 +4,8 @@ from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
+from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.utils.dates import days_ago
 
 from plugins import slack
@@ -59,23 +59,23 @@ with DAG(f"etl_{table}",
             "spark.hadoop.fs.s3a.access.key": Variable.get("aws_access_key_id"),
             "spark.hadoop.fs.s3a.secret.key": Variable.get("aws_secret_access_key"),
         },
-        packages="org.apache.hadoop:hadoop-aws:3.3.2"
+        packages="org.apache.hadoop:hadoop-aws:3.3.2,org.apache.spark:spark-avro_2.12:3.4.1"
     )
 
-    # Snowflake 작업을 위한 Task
-    snowflake_task = SQLExecuteQueryOperator(
-        task_id="snowflake_task",
-        conn_id="snowflake_default",
-        sql=f"""
-            USE SCHEMA RAW_DATA;
-            COPY INTO RAW_DATA.{table}
-            FROM @s3_stage/{dest_bucket}/{file_prefix}.parquet
-            PATTERN='.*.parquet'
-            FORCE = TRUE
-            MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;            
-            """,
-        autocommit=False,
-        split_statements=True,
+    schema = "RAW_DATA"
+    redshift_method = "APPEND"
+
+    # Redshift 작업을 위한 Task
+    redshift_task = S3ToRedshiftOperator(
+        task_id="redshift_task",
+        aws_conn_id="aws_default",
+        redshift_conn_id="redshift_default",
+        s3_bucket=bucket_name,
+        s3_key=f"{dest_bucket}/{file_prefix}.avro",
+        schema=schema,
+        table=table,
+        copy_options=["format as avro 'auto'"],
+        method=redshift_method
     )
 
-    start_task >> s3_copy_task >> spark_task >> snowflake_task >> end_task
+    start_task >> s3_copy_task >> spark_task >> redshift_task >> end_task
