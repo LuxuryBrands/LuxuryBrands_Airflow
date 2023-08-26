@@ -15,8 +15,8 @@ table = "media"
 
 default_args = {
     'start_date': days_ago(1),
-    'retries': 0,
-    'retry_delay': timedelta(minutes=1),
+    'retries': 3,
+    'retry_delay': timedelta(seconds=30),
     'on_failure_callback': slack.send_failure_alert,
     'on_success_callback': slack.send_success_alert
 }
