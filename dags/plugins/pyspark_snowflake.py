@@ -223,13 +223,13 @@ def main():
         expr("EXTRACT(DAYOFWEEK FROM ts)").alias("day_of_week"),
         expr("""
             CASE EXTRACT(DAYOFWEEK FROM ts)
-                WHEN 0 THEN 'Sunday'
-                WHEN 1 THEN 'Monday'
-                WHEN 2 THEN 'Tuesday'
-                WHEN 3 THEN 'Wednesday'
-                WHEN 4 THEN 'Thursday'
-                WHEN 5 THEN 'Friday'
-                WHEN 6 THEN 'Saturday'
+                WHEN 1 THEN 'Sunday'
+                WHEN 2 THEN 'Monday'
+                WHEN 3 THEN 'Tuesday'
+                WHEN 4 THEN 'Wednesday'
+                WHEN 5 THEN 'Thursday'
+                WHEN 6 THEN 'Friday'
+                WHEN 7 THEN 'Saturday'
             END AS post_day_of_week
         """).alias("post_day_of_week")
     )
