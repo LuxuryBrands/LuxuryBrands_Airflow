@@ -41,7 +41,7 @@ jobs:
         id: render-web-container
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: config/task-definition.json
+          task-definition: ./config/task-definition.json
           container-name: webserver
           image: ${{ steps.build-image.outputs.image }}
 
