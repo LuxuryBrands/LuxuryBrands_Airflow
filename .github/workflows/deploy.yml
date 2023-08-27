@@ -30,8 +30,8 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: $ECR_REPOSITORY
-          IMAGE_TAG: ${{ github.sha }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.run_number }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -65,14 +65,14 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.render-web-container.outputs.task-definition }}
-          service: $SERVICE
-          cluster: $CLUSTER
+          service: ${{ vars.SERVICE }}
+          cluster: ${{ vars.CLUSTER }}
           wait-for-service-stability: true
 
       - name: Slack Notification
         uses: act10ns/slack@v1
         with:
-          channel: $SLACK_CHANNEL
+          channel: ${{ vars.SLACK_CHANNEL }}
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
         env:
