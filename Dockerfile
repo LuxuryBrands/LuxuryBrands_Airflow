@@ -9,11 +9,11 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY ../config ${AIRFLOW_HOME}/
-COPY ../dags ${AIRFLOW_HOME}/dags
-COPY ../plugins ${AIRFLOW_HOME}/plugins
-COPY ../requirements.txt /
-COPY ../entrypoint.sh /
+COPY ./config ${AIRFLOW_HOME}/
+COPY ./dags ${AIRFLOW_HOME}/dags
+COPY ./plugins ${AIRFLOW_HOME}/plugins
+COPY ./requirements.txt /
+COPY ./entrypoint.sh /
 
 # Add directory in which pip installs to PATH
 ENV PATH=${PATH}:/home/airflow/.local/bin
