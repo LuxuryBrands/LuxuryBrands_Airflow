@@ -2,9 +2,8 @@ name: Dockerize and Deploy ECS
 
 
 on:
-  pull_request:
-    branches:
-      - develop
+  push:
+    branches: [ main, develop ]
 
 jobs:
   deploy:
@@ -34,6 +33,7 @@ jobs:
           IMAGE_TAG: ${{ github.run_number }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
@@ -73,7 +73,7 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,action,eventName,ref,workflow
+          fields: repo,message,commit,action,eventName,workflow
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         if: always()
