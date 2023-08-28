@@ -87,7 +87,7 @@
           "type": "s3"
         }
       ],
-      "mountPoints": [],정
+      "mountPoints": [],
       "volumesFrom": [],
       "linuxParameters": {
         "initProcessEnabled": true
