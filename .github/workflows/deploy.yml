@@ -57,14 +57,14 @@ jobs:
         id: render-worker-container
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ steps.render-web-container.outputs.task-definition }}
+          task-definition: ${{ steps.render-scheduler-container.outputs.task-definition }}
           container-name: worker
           image: ${{ steps.build-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ steps.render-web-container.outputs.task-definition }}
+          task-definition: ${{ steps.render-worker-container.outputs.task-definition }}
           service: ${{ vars.SERVICE }}
           cluster: ${{ vars.CLUSTER }}
           wait-for-service-stability: true
