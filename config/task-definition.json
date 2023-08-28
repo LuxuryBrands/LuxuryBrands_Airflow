@@ -67,12 +67,12 @@
       ],
       "secrets": [
         {
-          "valueFrom": "arn:aws:secretsmanager:us-west-2:862327261051:secret:DE-2-1-SECRET-T7uW5a",
-          "name": "_AIRFLOW_WWW_USER_USERNAME"
+          "name": "_AIRFLOW_WWW_USER_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:us-west-2:862327261051:secret:DE-2-1-SECRET-T7uW5a:airflow_user::"
         },
         {
-          "valueFrom": "arn:aws:secretsmanager:us-west-2:862327261051:secret:DE-2-1-SECRET-T7uW5a",
-          "name": "_AIRFLOW_WWW_USER_PASSWORD"
+          "name": "_AIRFLOW_WWW_USER_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-west-2:862327261051:secret:DE-2-1-SECRET-T7uW5a:airflow_password::"
         }
       ],
       "environment": [
