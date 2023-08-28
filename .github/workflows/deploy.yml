@@ -70,11 +70,10 @@ jobs:
           wait-for-service-stability: true
 
       - name: Slack Notification
-        uses: act10ns/slack@v1
+        uses: 8398a7/action-slack@v3
         with:
-          channel: ${{ vars.SLACK_CHANNEL }}
           status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
+          fields: repo,message,commit,action,eventName,ref,workflow
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         if: always()
