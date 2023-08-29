@@ -4,18 +4,24 @@ from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
+from airflow.providers.amazon.aws.operators.emr import EmrAddStepsOperator
+from airflow.providers.amazon.aws.sensors.emr import EmrStepSensor
 from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOperator
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
+from airflow.utils.task_group import TaskGroup
 
+from plugins.s3 import check_and_copy_files, upload_to_s3
+from plugins.spark import get_etl_step, get_emr_cluster_id
 from plugins import slack
-from plugins.s3 import check_and_copy_files
 
 table = "brand"
+schema = "RAW_DATA"
+redshift_method = "REPLACE"
+has_log_table = True
 
 default_args = {
     'start_date': days_ago(1),
-    'retries': 3,
+    'retries': 0,
     'retry_delay': timedelta(seconds=30),
     'on_failure_callback': slack.send_failure_alert,
     'on_success_callback': slack.send_success_alert
@@ -48,46 +54,62 @@ with DAG(f"etl_{table}",
     )
 
     # Spark 작업을 위한 Task
-    spark_task = SparkSubmitOperator(
-        task_id='spark_task',
-        application=f"./dags/plugins/spark_{table}.py",
-        application_args=[
-            f"s3a://{bucket_name}/{dest_bucket}/{file_prefix}",
-            "{{ ts }}",
-        ],
-        conf={
-            "spark.hadoop.fs.s3a.access.key": Variable.get("aws_access_key_id"),
-            "spark.hadoop.fs.s3a.secret.key": Variable.get("aws_secret_access_key"),
-        },
-        packages="org.apache.hadoop:hadoop-aws:3.3.2,org.apache.spark:spark-avro_2.12:3.4.1"
-    )
+    with TaskGroup("spark_task_group") as spark_task_group:
+        script_key = f"emr/scripts/spark_{table}.py"
+        dest_key = f"{dest_bucket}/{file_prefix}"
+        spark_steps = get_etl_step(bucket_name, script_key, dest_key)
+        job_flow_name = 'de-2-1-emr'
 
-    schema = "RAW_DATA"
-    redshift_method = "REPLACE"
+        get_cluster_id = PythonOperator(
+            task_id="get_cluster_id",
+            python_callable=get_emr_cluster_id,
+            op_kwargs={"job_flow_name": job_flow_name, "cluster_states": ["RUNNING", "WAITING"]},
+        )
+
+        script_to_s3 = PythonOperator(
+            task_id="script_to_s3",
+            python_callable=upload_to_s3,
+            op_kwargs={"filename": f"./dags/plugins/spark_{table}.py", "key": script_key, "bucket_name": bucket_name},
+        )
+
+        add_steps = EmrAddStepsOperator(
+            task_id="add_steps",
+            job_flow_id="{{ task_instance.xcom_pull(task_ids='spark_task_group.get_cluster_id', key='return_value') }}",
+            steps=spark_steps
+        )
+
+        step_checker = EmrStepSensor(
+            task_id="step_checker",
+            job_flow_id="{{ task_instance.xcom_pull(task_ids='spark_task_group.get_cluster_id', key='return_value') }}",
+            step_id="{{ task_instance.xcom_pull(task_ids='spark_task_group.add_steps', key='return_value')["
+                    + str(len(spark_steps) - 1)
+                    + "] }}",
+        )
+
+        get_cluster_id >> script_to_s3 >> add_steps >> step_checker
 
     # Redshift 작업을 위한 Task
-    redshift_task = S3ToRedshiftOperator(
-        task_id=f"redshift_{table}_task",
-        aws_conn_id="aws_default",
-        redshift_conn_id="redshift_default",
-        s3_bucket=bucket_name,
-        s3_key=f"{dest_bucket}/{file_prefix}.avro",
-        schema=schema,
-        table=table,
-        copy_options=["format as avro 'auto'"],
-        method=redshift_method
-    )
+    with TaskGroup("redshift_task_group") as redshift_task_group:
+        redshift_task = S3ToRedshiftOperator(
+            task_id=f"redshift_{table}_task",
+            s3_bucket=bucket_name,
+            s3_key=f"{dest_bucket}/{file_prefix}.avro",
+            schema=schema,
+            table=table,
+            copy_options=["format as avro 'auto'"],
+            method=redshift_method
+        )
 
-    redshift_log_task = S3ToRedshiftOperator(
-        task_id=f"redshift_{table}_log_task",
-        aws_conn_id="aws_default",
-        redshift_conn_id="redshift_default",
-        s3_bucket=bucket_name,
-        s3_key=f"{dest_bucket}/{file_prefix}.avro",
-        schema=schema,
-        table=f"{table}_log",
-        copy_options=["format as avro 'auto'"],
-        method="APPEND",
-    )
+        redshift_log_task = S3ToRedshiftOperator(
+            task_id=f"redshift_{table}_log_task",
+            s3_bucket=bucket_name,
+            s3_key=f"{dest_bucket}/{file_prefix}.avro",
+            schema=schema,
+            table=f"{table}_log",
+            copy_options=["format as avro 'auto'"],
+            method="APPEND",
+        )
 
-    start_task >> s3_copy_task >> spark_task >> redshift_task >> redshift_log_task >> end_task
+        redshift_task >> redshift_log_task
+
+    start_task >> s3_copy_task >> spark_task_group >> redshift_task_group >> end_task
