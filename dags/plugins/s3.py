@@ -26,3 +26,13 @@ def check_and_copy_files(**context):
         print(source_file)
         print(dest_file)
         s3_hook.copy_object(source_file, dest_file)
+
+
+# helper function
+def upload_to_s3(**context):
+    filename = context["filename"]
+    key = context["key"]
+    bucket_name = context["bucket_name"]
+
+    s3 = S3Hook()
+    s3.load_file(filename=filename, bucket_name=bucket_name, replace=True, key=key)
