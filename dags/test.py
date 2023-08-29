@@ -29,30 +29,5 @@ python_task = PythonOperator(
     dag=dag,
 )
 
-test_replace_task = S3ToRedshiftOperator(
-    task_id="task_transfer_s3_to_redshift",
-    aws_conn_id="aws_default",
-    redshift_conn_id="redshift_conn",
-    s3_bucket="de-2-1-s3",
-    s3_key="stage/brand_2023-08-21/brand_2023-08-21_15_temp.avro",
-    schema="RAW_DATA",
-    table="brand",
-    copy_options=["format as avro 'auto'"],
-    method="REPLACE"
-)
-
-test_upsert_task = S3ToRedshiftOperator(
-    task_id="test_upsert_task",
-    aws_conn_id="aws_default",
-    redshift_conn_id="redshift_conn",
-    s3_bucket="de-2-1-s3",
-    s3_key="stage/brand_2023-08-22/brand_2023-08-22_05_temp.avro",
-    schema="RAW_DATA",
-    table="brand",
-    copy_options=["format as avro 'auto'"],
-    method="UPSERT",
-    upsert_keys=["user_id"]
-)
-
 # 작업 간의 의존성 설정
 start_task >> python_task >> end_task
