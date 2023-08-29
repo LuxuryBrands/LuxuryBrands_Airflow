@@ -27,9 +27,9 @@ def transfer_df(df):
     df = df.withColumn("tag_name", regexp_replace(col("user_name"), "maison|official", ""))
     df = df.withColumn("del_yn", lit('N').cast(StringType()))
     df = df.withColumn("created_at",
-                       date_format(to_timestamp(lit(logical_date), "yyyy-MM-dd'T'HH:mm:ssXXX"), "yyyy-MM-dd HH:mm:ss"))
+                       date_format(to_timestamp(lit(logical_date)), "yyyy-MM-dd HH:mm:ss"))
     df = df.withColumn("updated_at",
-                       date_format(to_timestamp(lit(logical_date), "yyyy-MM-dd'T'HH:mm:ssXXX"), "yyyy-MM-dd HH:mm:ss"))
+                       date_format(to_timestamp(lit(logical_date)), "yyyy-MM-dd HH:mm:ss"))
 
     # 결측치
     df = df.withColumn("name", when(col("name") == "", col("user_name")).otherwise(col("name")))
