@@ -17,7 +17,22 @@ def get_etl_step(bucket_name, script_key, dest_key):
         }
     ]
 
-
+def get_elt_step(bucket_name, script_key):
+    return [
+        {
+            "Name": "elt_data",
+            "ActionOnFailure": "CANCEL_AND_WAIT",
+            "HadoopJarStep": {
+                "Jar": "command-runner.jar",
+                "Args": [
+                    "spark-submit",
+                    "--deploy-mode",
+                    "client",
+                    f"s3://{bucket_name}/{script_key}",
+                ],
+            },
+        }
+    ]
 def get_emr_cluster_id(**context):
     from airflow.providers.amazon.aws.hooks.emr import EmrHook
     from airflow import AirflowException
