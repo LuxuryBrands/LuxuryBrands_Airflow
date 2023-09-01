@@ -19,7 +19,7 @@ default_args = {
 }
 
 dag = DAG(
-    'pyspark_half_hourly_dag',
+    'pyspark_to_redshift_elt',
     default_args=default_args,
     schedule_interval='30 * * * *',  # Run the DAG every 30 minutes past the hour 
     catchup=False,  # Do not catch up on historical runs
@@ -27,12 +27,13 @@ dag = DAG(
 
 
 # Define the SparkSubmitOperator
+
+# Define the SparkSubmitOperator
 spark_task = SparkSubmitOperator(
-    task_id='submit_spark_task',
+    task_id='run_spark_elt_job',
     dag=dag,
-    application=f"./dags/plugins/pyspark_snowflake.py",
-    packages="net.snowflake:snowflake-jdbc:3.13.22,net.snowflake:spark-snowflake_2.12:2.12.0-spark_3.4"
-
-
+    application=f"./dags/plugins/pyspark_elt_redshift.py",
+    jars=f"./plugins/redshift-jdbc42-2.1.0.17.jar"
 )
+
 
