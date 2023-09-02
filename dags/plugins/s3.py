@@ -30,7 +30,7 @@ def check_and_copy_files(**context):
 # helper function
 def upload_to_s3(**context):
     bucket_name = Variable.get("aws_bucket")
-    emr_keys = context["emr_keys"]
+    emr_keys = context["key"]
     files = context["files"]
 
     s3 = S3Hook()
