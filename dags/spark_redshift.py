@@ -27,8 +27,6 @@ dag = DAG(
 
 
 # Define the SparkSubmitOperator
-
-# Define the SparkSubmitOperator
 spark_task = SparkSubmitOperator(
     task_id='run_spark_elt_job',
     dag=dag,
