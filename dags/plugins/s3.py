@@ -1,13 +1,14 @@
+import logging
+
+from airflow.models import Variable
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 
 def check_and_copy_files(**context):
-    print(">>>", context)
-
     # S3 폴더 경로
-    bucket_name = context["bucket_name"]
-    source_bucket = context["source_bucket"]
-    dest_bucket = context["dest_bucket"]
+    bucket_name = Variable.get("aws_bucket")
+    source_bucket = Variable.get("aws_raw_bucket")
+    dest_bucket = Variable.get("aws_stage_bucket")
     prefix = context["prefix"]
 
     # S3Hook 초기화
@@ -23,16 +24,20 @@ def check_and_copy_files(**context):
         source_file = f"s3://{bucket_name}/{file_path}"
         dest_file = f"s3://{bucket_name}/{dest_bucket}/{prefix}/{file_path.split('/')[-1]}"
 
-        print(source_file)
-        print(dest_file)
         s3_hook.copy_object(source_file, dest_file)
 
 
 # helper function
 def upload_to_s3(**context):
-    filename = context["filename"]
-    key = context["key"]
-    bucket_name = context["bucket_name"]
+    bucket_name = Variable.get("aws_bucket")
+    emr_keys = context["emr_keys"]
+    files = context["files"]
 
     s3 = S3Hook()
-    s3.load_file(filename=filename, bucket_name=bucket_name, replace=True, key=key)
+
+    try:
+        for file, key in zip(files, emr_keys):
+            s3.load_file(filename=file, bucket_name=bucket_name, replace=True, key=key)
+    except Exception as e:
+        logging.warning(f"An error occurred: {e}")
+        raise
