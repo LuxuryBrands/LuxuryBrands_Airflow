@@ -41,6 +41,76 @@ def main():
     media_hashtag_df = read_dfs["media_hashtag"]
     brand_log_df = read_dfs["brand_log"]
 
+    # !!!!!!!!!!quality checking!!!!!!!!
+    brand_df.createOrReplaceTempView("brand_df")
+    media_df.createOrReplaceTempView("media_df")
+    media_hashtag_df.createOrReplaceTempView("media_hashtag_df")
+    brand_log_df.createOrReplaceTempView("brand_log_df")
+
+    check_brand_df = spark.sql("""
+            SELECT
+                (CASE WHEN COUNT(DISTINCT user_id)=COUNT(user_id) THEN TRUE ELSE FALSE END) as isUnique_user_id_brand,
+                (CASE WHEN COUNT(CASE WHEN user_id IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_user_id_brand,
+                (CASE WHEN COUNT(DISTINCT tag_name)=COUNT(tag_name) THEN TRUE ELSE FALSE END) as isUnique_tag_name_brand,
+                (CASE WHEN COUNT(CASE WHEN tag_name IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_tag_name_brand
+            FROM brand_df
+        """)
+    check_brand_df.show()
+
+    check_brand_log_df = spark.sql("""
+                SELECT
+                    (CASE WHEN COUNT(CASE WHEN user_id IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_user_id_brand_log      
+                FROM brand_log_df
+            """)
+    check_brand_log_df.show()
+
+    check_media_df = spark.sql("""
+                    SELECT
+                        (CASE WHEN COUNT(CASE WHEN user_id IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_user_id_media,      
+                        (CASE WHEN COUNT(DISTINCT media_id)=COUNT(media_id) THEN TRUE ELSE FALSE END) as isUnique_media_id_media,
+                        (CASE WHEN COUNT(CASE WHEN media_id IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_media_id_media,
+                        (CASE WHEN (100-(count(CASE WHEN like_count=0 THEN 1 END)* 100) /count(like_count)>50) THEN TRUE ELSE FALSE END) as like_count_Completeness_media,
+                        (CASE WHEN (100-(count(CASE WHEN comments_count=0 THEN 1 END)* 100) /count(comments_count)>50) THEN TRUE ELSE FALSE END) as comments_count_Completeness_media,
+                        (CASE WHEN COUNT(CASE WHEN media_type IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_media_type_media,
+                        (CASE WHEN COUNT(CASE WHEN media_product_type IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_media_product_type_media
+                    FROM media_df
+                """)
+    check_media_df.show()
+
+    check_media_hashtag_df = spark.sql("""
+                        SELECT
+                            (CASE WHEN COUNT(CASE WHEN user_id IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_user_id_media_hashtag,      
+                            (CASE WHEN COUNT(CASE WHEN media_id IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_media_id_media_hashtag,
+                            (CASE WHEN (100-(count(CASE WHEN caption='' THEN 1 END)* 100) /count(caption)>50) THEN TRUE ELSE FALSE END) as like_count_Completeness_media_hashtag,
+                            (CASE WHEN COUNT(CASE WHEN media_type IS NULL THEN 1 END) > 0 THEN FALSE ELSE TRUE END) as isNotNull_media_type_media_hashtag
+                        FROM media_hashtag_df
+                    """)
+    check_media_hashtag_df.show()
+
+    filtered_df1 = check_brand_df.select(
+        *[col(col_name) for col_name in check_brand_df.columns if not check_brand_df.head(1)[0][col_name]])
+    filtered_df2 = check_brand_log_df.select(
+        *[col(col_name) for col_name in check_brand_log_df.columns if not check_brand_log_df.head(1)[0][col_name]])
+    filtered_df3 = check_media_df.select(
+        *[col(col_name) for col_name in check_media_df.columns if not check_media_df.head(1)[0][col_name]])
+    filtered_df4 = check_media_hashtag_df.select(*[col(col_name) for col_name in check_media_hashtag_df.columns if
+                                                   not check_media_hashtag_df.head(1)[0][col_name]])
+
+    # Check if the filtered DataFrame is empty
+    if filtered_df1.isEmpty():
+        # If it's empty, raise an exception
+        raise Exception("Quality Check Failed 1")
+    elif filtered_df2.isEmpty():
+        raise Exception("Quality Check Failed 2")
+    elif filtered_df3.isEmpty():
+        raise Exception("Quality Check Failed 3")
+    elif filtered_df4.isEmpty():
+        raise Exception("Quality Check Failed 4")
+    else:
+        # If not empty, just pass
+        pass
+
+    print("SUCCESS Quality Check")
     # !!!!!!!!!!!!!!elt!!!!!!!!!!!!!
 
     # create brand_basic_info table
@@ -275,6 +345,7 @@ def main():
                 .option("dbtable", f"{analytics_schema}.{write_table_name}") \
                 .mode("append") \
                 .save()
+
 
 
     spark.stop()
