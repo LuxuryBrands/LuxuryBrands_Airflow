@@ -3,16 +3,16 @@ from airflow.operators.empty import EmptyOperator
 from datetime import datetime, timedelta
 
 from airflow.operators.python import PythonOperator
+from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOperator
 
 # DAG 설정
 default_args = {
     'start_date': datetime(2023, 1, 1),
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
-    'catchUp': False,
 }
 
-dag = DAG('test_dag', default_args=default_args, schedule_interval=timedelta(days=1))
+dag = DAG('test_dag', default_args=default_args, catchup=False, schedule_interval=timedelta(days=1))
 
 
 # 작업 정의
