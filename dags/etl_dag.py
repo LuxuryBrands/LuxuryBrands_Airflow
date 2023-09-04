@@ -77,7 +77,7 @@ for config_name, config in configs.items():
                 python_callable=upload_to_s3,
                 op_kwargs={
                     'files': files,
-                    'emr_keys': emr_keys,
+                    'keys': emr_keys,
                 },
             )
 

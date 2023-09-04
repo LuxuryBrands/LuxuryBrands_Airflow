@@ -30,13 +30,13 @@ def check_and_copy_files(**context):
 # helper function
 def upload_to_s3(**context):
     bucket_name = Variable.get("aws_bucket")
-    emr_keys = context["emr_keys"]
+    keys = context["keys"]
     files = context["files"]
 
     s3 = S3Hook()
 
     try:
-        for file, key in zip(files, emr_keys):
+        for file, key in zip(files, keys):
             s3.load_file(filename=file, bucket_name=bucket_name, replace=True, key=key)
     except Exception as e:
         logging.warning(f"An error occurred: {e}")

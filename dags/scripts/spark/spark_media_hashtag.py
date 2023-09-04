@@ -15,10 +15,7 @@ def main():
 
     json_df = etl_job.get_json_df()
     result_df = transfer_df(json_df, logical_date)
-
-    # (23.09.01) EMR 메인노드 부하로 주석처리
-    # etl_job.validate_df(result_df)
-
+    etl_job.validate_df(result_df)
     etl_job.save(result_df)
     etl_job.close()
 
