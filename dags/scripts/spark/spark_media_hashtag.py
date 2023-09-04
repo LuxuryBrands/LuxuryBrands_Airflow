@@ -15,9 +15,7 @@ def main():
 
     json_df = etl_job.get_json_df()
     result_df = transfer_df(json_df, logical_date)
-
     etl_job.validate_df(result_df)
-
     etl_job.save(result_df)
     etl_job.close()
 
