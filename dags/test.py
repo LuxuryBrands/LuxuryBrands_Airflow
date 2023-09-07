@@ -3,7 +3,6 @@ from airflow.operators.empty import EmptyOperator
 from datetime import datetime, timedelta
 
 from airflow.operators.python import PythonOperator
-from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOperator
 
 # DAG 설정
 default_args = {

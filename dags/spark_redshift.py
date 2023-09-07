@@ -5,10 +5,8 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
-from plugins import slack
 
-
-
+from dags.scripts.comm import slack
 
 default_args = {
     'start_date': days_ago(1),
@@ -25,7 +23,6 @@ dag = DAG(
     catchup=False,  # Do not catch up on historical runs
 )
 
-
 # Define the SparkSubmitOperator
 spark_task = SparkSubmitOperator(
     task_id='run_spark_elt_job',
@@ -33,5 +30,3 @@ spark_task = SparkSubmitOperator(
     application=f"./dags/plugins/pyspark_elt_redshift.py",
     jars=f"./plugins/redshift-jdbc42-2.1.0.17.jar"
 )
-
-
