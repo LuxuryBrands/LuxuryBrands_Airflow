@@ -5,10 +5,8 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.utils.dates import days_ago
-from plugins import slack
 
-
-
+from dags.scripts.comm import slack
 
 default_args = {
     'start_date': days_ago(1),
@@ -25,7 +23,6 @@ dag = DAG(
     catchup=False,  # Do not catch up on historical runs
 )
 
-
 # Define the SparkSubmitOperator
 spark_task = SparkSubmitOperator(
     task_id='submit_spark_task',
@@ -33,6 +30,4 @@ spark_task = SparkSubmitOperator(
     application=f"./dags/plugins/pyspark_elt_snowflake.py",
     packages="net.snowflake:snowflake-jdbc:3.13.22,net.snowflake:spark-snowflake_2.12:2.12.0-spark_3.4"
 
-
 )
-

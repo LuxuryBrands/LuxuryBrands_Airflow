@@ -9,7 +9,7 @@ from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOp
 from airflow.utils.dates import days_ago
 from airflow.utils.task_group import TaskGroup
 
-from plugins import slack
+from dags.scripts.comm import slack
 
 configs = {
     "brand": {"redshift_method": "REPLACE", "has_log_table": True},
@@ -46,11 +46,11 @@ for config_name, config in configs.items():
 
         # Spark 작업을 위한 Task
         with TaskGroup("spark_task_group") as spark_task_group:
-            from plugins.s3 import check_and_copy_files, upload_to_s3
-            from plugins.spark import get_etl_step, get_emr_cluster_id
+            from dags.scripts.comm.s3 import upload_to_s3, check_and_copy_files
+            from dags.scripts.comm.spark import get_emr_cluster_id, get_etl_step
 
             file_name = ["/etl_job.py", f"/spark_{table}.py"]
-            files = ["./dags/scripts/spark" + f for f in file_name]
+            files = ["./dags/scripts/etl" + f for f in file_name]
             emr_keys = ["{{ var.value.get('aws_emr_key') }}" + f for f in file_name]
 
             # FIXME custom EMROperator 생성
