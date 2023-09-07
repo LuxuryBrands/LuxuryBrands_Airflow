@@ -22,14 +22,14 @@
 
 ## 2. ELT
 
-### 1 - 1. Airflow 스케줄링
+### 2 - 1. Airflow 스케줄링
 ![img3](https://github.com/LuxuryBrands/.github/blob/main/profile/files/ELT_airflow.png)
 - 매 시 30분 마다 Raw Data를 Mart Data로 처리하는 DAG 
 - EMR을 통해 데이터 가공, 품질 검증, 데이터 적재 작업 수행
 - Slack 모듈을 활용하여 각 task 의 결과를 Slack 으로 전송
 
 
-### 1 - 2. EMR 프로세스
+### 2 - 2. EMR 프로세스
 ![img4](https://github.com/LuxuryBrands/.github/blob/main/profile/files/ELT_emr_process.png)
 - 품질체크 쿼리를 통해 Raw 데이터를 검증 후 로깅 및 실패시 Dag 종료
 - 마트 테이블 모두 Overwrite 적재 수행
