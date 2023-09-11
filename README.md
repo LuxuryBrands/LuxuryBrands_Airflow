@@ -1,4 +1,5 @@
 # LuxuryBrands_Airflow
+Airflow로 스케줄링하는 ETL/ELT 파이프라인 모듈
 
 
 ## 1. ETL
